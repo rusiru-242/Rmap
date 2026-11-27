@@ -1,0 +1,61 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: rmap-backend
+  data:
+    mongodb:
+      uri: ${RMAP_MONGODB_URI:mongodb://localhost:27017/rmap?replicaSet=rs0}
+      auto-index-creation: true
+    redis:
+      host: ${RMAP_REDIS_HOST:localhost}
+      port: ${RMAP_REDIS_PORT:6379}
+      timeout: 3s
+  mail:
+    host: ${RMAP_MAIL_HOST:localhost}
+    port: ${RMAP_MAIL_PORT:1025}
+    username: ${RMAP_MAIL_USERNAME:}
+    password: ${RMAP_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${RMAP_MAIL_AUTH:false}
+          starttls:
+            enable: ${RMAP_MAIL_STARTTLS:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+rmap:
+  security:
+    jwt-secret: ${RMAP_JWT_SECRET:dev-only-change-in-production-32-byte-minimum-secret-key}
+    access-token-ttl-seconds: ${RMAP_JWT_ACCESS_TTL_SECONDS:900}
+    refresh-token-ttl-seconds: ${RMAP_JWT_REFRESH_TTL_SECONDS:604800}
+    otp-ttl-seconds: ${RMAP_OTP_TTL_SECONDS:600}
+    allowed-origins:
+      - http://localhost:5173
+      - http://localhost:5174
+      - http://localhost:3000
+      - http://127.0.0.1:5173
+  mail:
+    from: ${RMAP_MAIL_FROM:no-reply@rmap.local}
+  billing:
+    trial-hours: 72
+    provider: ${RMAP_PAYMENT_PROVIDER:unconfigured}
+    webhook-secret: ${RMAP_PAYMENT_WEBHOOK_SECRET:}
+  bootstrap:
+    admin-email: ${RMAP_BOOTSTRAP_ADMIN_EMAIL:}
+    admin-password: ${RMAP_BOOTSTRAP_ADMIN_PASSWORD:}
