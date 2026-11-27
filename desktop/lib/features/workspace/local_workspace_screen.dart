@@ -84,17 +84,20 @@ class _LocalWorkspaceScreenState extends ConsumerState<LocalWorkspaceScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Secure Local Workspace', style: theme.textTheme.headlineSmall),
-                const SizedBox(height: 4),
-                Text(
-                  'Explicit user folder authorization with canonical path boundaries and sensitive-file exclusion.',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Secure Local Workspace', style: theme.textTheme.headlineSmall),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Explicit user folder authorization with canonical path boundaries and sensitive-file exclusion.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: RmapTokens.space3),
             FilledButton.icon(
               onPressed: _scanning ? null : _selectAndScanFolder,
               icon: const Icon(Icons.folder_open_outlined, size: 16),

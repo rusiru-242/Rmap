@@ -14,6 +14,7 @@ Pop-Location
 
 Write-Host "=== 3. Admin Portal Verification (React/TS/Vite) ===" -ForegroundColor Cyan
 Push-Location "$PSScriptRoot\..\admin"
+npm run lint
 npm run typecheck
 npm run test
 npm run build

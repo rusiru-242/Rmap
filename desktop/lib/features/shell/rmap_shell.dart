@@ -327,7 +327,13 @@ class _AiAssistantSidePanel extends StatelessWidget {
             children: [
               Icon(Icons.auto_awesome_outlined, size: 16, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
-              Text('Project-Aware AI Assistant', style: theme.textTheme.titleSmall),
+              Expanded(
+                child: Text(
+                  'Project-Aware AI Assistant',
+                  style: theme.textTheme.titleSmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           const Divider(height: RmapTokens.space4),

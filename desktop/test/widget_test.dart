@@ -1,10 +1,15 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:rmap_desktop/app.dart';
 import 'package:rmap_desktop/core/navigation/nav_registry.dart';
+import 'package:rmap_desktop/core/theme/rmap_theme.dart';
+import 'package:rmap_desktop/features/settings/account_screens.dart';
+import 'package:rmap_desktop/features/shell/rmap_shell.dart';
+import 'package:rmap_desktop/features/workspace/local_workspace_screen.dart';
 import 'package:rmap_desktop/features/workspace/local_workspace_security.dart';
 
 void main() {
@@ -68,5 +73,56 @@ void main() {
 
     expect(find.text('Rmap Workspace'), findsOneWidget);
     expect(find.text('Sign in to Rmap'), findsOneWidget);
+  });
+
+  testWidgets('RmapShell renders sidebar navigation, AI panel, command palette, and theme status bar', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: RmapTheme.light(),
+          darkTheme: RmapTheme.dark(),
+          home: const RmapShell(
+            currentLocation: '/workspace/local',
+            child: LocalWorkspaceScreen(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('WORKSPACE'), findsOneWidget);
+    expect(find.text('Project-Aware AI Assistant'), findsOneWidget);
+    expect(find.text('Secure Local Workspace'), findsOneWidget);
+    expect(find.text('Select Local Folder'), findsOneWidget);
+
+    await tester.tap(find.text('Command Palette  Ctrl+K'));
+    await tester.pumpAndSettle();
+    expect(find.text('Jump to workspace view...'), findsOneWidget);
+  });
+
+  testWidgets('SettingsScreen switches theme mode between System, Light, and Dark', (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: RmapTheme.light(),
+          darkTheme: RmapTheme.dark(),
+          home: const Scaffold(body: SettingsScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(container.read(themeModeProvider), ThemeMode.system);
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+    expect(container.read(themeModeProvider), ThemeMode.dark);
   });
 }
