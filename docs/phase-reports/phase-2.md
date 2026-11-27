@@ -55,13 +55,23 @@
 
 ## 4. Actual Verification & Test Results
 
+### Phase 2 Implementation Audit Findings & Fixes
+
+During the full Phase 2 audit, the following reproducible gaps/issues were identified and fixed:
+1. **Backend Optimistic Lock Error Mapping**: Added `OptimisticLockingFailureException` handler in `GlobalExceptionHandler` returning RFC 7807 `409 CONFLICT` (`OPTIMISTIC_LOCK_CONFLICT`) instead of `500`.
+2. **Backend Catalog Entitlement Guard**: Added `@RequiresActiveEntitlement` to `POST /api/v1/catalog/technologies` so expired trials remain strictly read-only.
+3. **Desktop Cross-Project Chat Isolation**: Fixed `ProjectChatPanel` so switching `activeProject` immediately resets and reloads conversations scoped strictly to the newly selected project, and added session switcher, **New Chat**, and **Delete Chat** controls.
+4. **Desktop Dashboard, Design & Academic Completeness**: Updated `DashboardScreen` from Phase 1 placeholder text to active Phase 2 project context; upgraded `ArchitectureWorkspaceScreen` into a 4-tab workspace (`Architecture & Diagrams`, `Technology Stack` with live `/validate`, `Database & APIs`, `Roles & Permissions`); added interactive rubric criterion editing wired to `PUT /academic` in `AcademicStudioScreen`.
+
+### Automated & Live Verification Matrix
+
 | Suite / Check | Command | Observed Result |
 | :--- | :--- | :--- |
-| Backend Verify & Package | `cd backend && .\mvnw.cmd verify` | **PASS** — 95 Java source files compiled (`--release 21`), **`19/19` tests passed** (Phase 1 regression: 12; Phase 2 Scenarios A/C/E/G, malicious uploads, AI schema/workflow recovery, cross-project RBAC, chat proposal approval: 7); packaged JAR |
-| Live Phase 2 + MongoDB Smoke Test | Packaged JAR on `PORT=8086` against local MongoDB (`127.0.0.1:27017/rmap_phase2_verify`) | **PASS** — Verified 4 registered AI agents, 45 seeded catalog items, project creation, `ProjectSpec` v1 approval -> v2 fork -> diff (`addedReqs=REQ-001`), architecture generation (`2` diagrams), and chat session persistence |
-| Desktop Analyze & Tests | `cd desktop && flutter analyze && flutter test` | **PASS** — 0 analyzer issues, **`8/8` tests passed** (including dynamic `CreateProjectWizardScreen` adaptation) |
-| Desktop Windows Release Build | `cd desktop && flutter build windows --release` | **PASS** — `√ Built build\windows\x64\runner\Release\rmap_desktop.exe` (35.3s) |
-| Admin Portal Regression | `cd admin && npm run lint && npm run typecheck && npm run test && npm run build` | **PASS** — 0 ESLint/TS errors, `3/3` Vitest tests passed, Vite production build succeeded |
+| Backend Verify & Package | `cd backend && .\mvnw.cmd verify` | **PASS** — 95 Java source files compiled (`--release 21`), **`19/19` tests passed** (Phase 1 regression: 12; Phase 2 Scenarios A/C/E/G, security, AI schema/workflow recovery, cross-project RBAC, chat proposal approval: 7); packaged JAR |
+| Live Phase 2 + MongoDB Audit | Packaged JAR (`PORT=8087`, `127.0.0.1:27017/rmap_phase2_audit`) | **PASS** — Verified live multipart document upload (`scenario-c-synthetic-academic-brief.md` -> `EXTRACTED`), multipart CSV profiling (`6×6`, `dups=1`, `leakageWarnings=2`), academic rubric audit (`inconsistencies=2`, `90.00` vs `100.00` marks), tech constraint validation (`valid=False`, `violations=2`), and truthful AI workflow failure without `GEMINI_API_KEY` (`status=FAILED`, never marked `COMPLETED`) |
+| Desktop Analyze & Tests | `cd desktop && flutter analyze && flutter test` | **PASS** — 0 analyzer issues, **`8/8` tests passed** |
+| Desktop Windows Release Build | `cd desktop && flutter build windows --release` | **PASS** — `√ Built build\windows\x64\runner\Release\rmap_desktop.exe` (29.6s) |
+| Admin Portal Regression | `cd admin && npm run lint && npm run typecheck && npm run test && npm run build` | **PASS** — 0 ESLint/TS errors, `3/3` Vitest tests passed, Vite production build succeeded (866ms) |
 
 ---
 

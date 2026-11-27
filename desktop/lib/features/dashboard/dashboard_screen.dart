@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/rmap_tokens.dart';
 import '../auth/auth_controller.dart';
+import '../projects/project_state.dart';
 import '../workspace/local_workspace_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -11,6 +12,8 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
+    final projects = ref.watch(projectsControllerProvider);
+    final activeProject = projects.activeProject;
     final scan = ref.watch(activeWorkspaceScanProvider);
     final theme = Theme.of(context);
 
@@ -20,25 +23,38 @@ class DashboardScreen extends ConsumerWidget {
         Text('Workspace Overview', style: theme.textTheme.headlineSmall),
         const SizedBox(height: 4),
         Text(
-          'Phase 1 Core Platform active — Authentication, Entitlements, Design System, and Secure Local Workspace.',
+          'Universal Project Intelligence, Versioned ProjectSpec, 4 Internal AI Agents, and Secure Local Workspace.',
           style: theme.textTheme.bodySmall,
         ),
         const SizedBox(height: RmapTokens.space5),
-        Row(
+        Wrap(
+          spacing: RmapTokens.space4,
+          runSpacing: RmapTokens.space4,
           children: [
-            Expanded(
+            SizedBox(
+              width: 280,
               child: _SummaryCard(
-                title: 'Account & Entitlement',
-                value: auth.entitlement?.status ?? 'Authenticated',
-                subtitle: auth.entitlement != null
-                    ? 'Plan: ${auth.entitlement!.planCode} · Access: ${auth.entitlement!.accessLevel}'
-                    : (auth.user?.email ?? 'Sign in to sync'),
-                actionLabel: 'Subscription',
-                onAction: () => context.go('/account/subscription'),
+                title: 'Active Project',
+                value: activeProject?.name ?? 'None selected',
+                subtitle: activeProject != null
+                    ? '${activeProject.mode} · Spec v${activeProject.activeSpecVersion}'
+                    : 'Create or open a project to manage specs, documents, and AI agents',
+                actionLabel: activeProject != null ? 'Open Spec' : 'My Projects',
+                onAction: () => context.go(activeProject != null ? '/discovery/requirements' : '/projects'),
               ),
             ),
-            const SizedBox(width: RmapTokens.space4),
-            Expanded(
+            SizedBox(
+              width: 280,
+              child: _SummaryCard(
+                title: 'AI Agent Orchestrator',
+                value: '4 Specialized Agents',
+                subtitle: 'Discovery, Architect, Engineering, and Quality & Delivery via backend Gemini LlmProvider',
+                actionLabel: 'Agent Manager',
+                onAction: () => context.go('/engineering/agents'),
+              ),
+            ),
+            SizedBox(
+              width: 280,
               child: _SummaryCard(
                 title: 'Local Repository',
                 value: scan?.displayName ?? 'Not linked',
@@ -49,14 +65,16 @@ class DashboardScreen extends ConsumerWidget {
                 onAction: () => context.go('/workspace/local'),
               ),
             ),
-            const SizedBox(width: RmapTokens.space4),
-            Expanded(
+            SizedBox(
+              width: 280,
               child: _SummaryCard(
-                title: 'AI Engineering Agents',
-                value: 'Phase 2',
-                subtitle: 'Discovery, Architect, Engineering, and Quality agents via backend Gemini LlmProvider',
-                actionLabel: 'Settings',
-                onAction: () => context.go('/account/settings'),
+                title: 'Account & Entitlement',
+                value: auth.entitlement?.status ?? 'Authenticated',
+                subtitle: auth.entitlement != null
+                    ? 'Plan: ${auth.entitlement!.planCode} · Access: ${auth.entitlement!.accessLevel}'
+                    : (auth.user?.email ?? 'Sign in to sync'),
+                actionLabel: 'Subscription',
+                onAction: () => context.go('/account/subscription'),
               ),
             ),
           ],
@@ -92,7 +110,7 @@ class _SummaryCard extends StatelessWidget {
           children: [
             Text(title, style: theme.textTheme.labelSmall),
             const SizedBox(height: RmapTokens.space2),
-            Text(value, style: theme.textTheme.titleMedium),
+            Text(value, style: theme.textTheme.titleMedium, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 6),
             Text(subtitle, style: theme.textTheme.bodySmall),
             const SizedBox(height: RmapTokens.space3),

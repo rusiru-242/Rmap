@@ -17,11 +17,46 @@ class _AcademicStudioScreenState extends ConsumerState<AcademicStudioScreen> {
   Map<String, dynamic>? _assessment;
   Map<String, dynamic>? _coverage;
   String? _error;
+  final _rubTitleCtrl = TextEditingController();
+  final _rubMarksCtrl = TextEditingController(text: '25');
 
   @override
   void initState() {
     super.initState();
     Future.microtask(_load);
+  }
+
+  @override
+  void dispose() {
+    _rubTitleCtrl.dispose();
+    _rubMarksCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addRubricCriterion() async {
+    final project = ref.read(projectsControllerProvider).activeProject;
+    if (project == null || _assessment == null || _rubTitleCtrl.text.trim().isEmpty) return;
+    final list = List<Map<String, dynamic>>.from(
+      (_assessment!['rubricCriteria'] as List<dynamic>? ?? []).map((e) => Map<String, dynamic>.from(e as Map)),
+    );
+    list.add({
+      'id': 'RUB-${(list.length + 1).toString().padLeft(3, '0')}',
+      'title': _rubTitleCtrl.text.trim(),
+      'maxMarks': double.tryParse(_rubMarksCtrl.text.trim()) ?? 0.0,
+      'performanceBandSummary': 'Target Band',
+      'sourceRef': 'Manual Entry',
+      'linkedRequirementIds': <String>[],
+      'plannedCoverageStatus': 'UNMAPPED',
+      'verifiedEvidenceStatus': 'NOT_VERIFIED',
+    });
+    final payload = Map<String, dynamic>.from(_assessment!)..['rubricCriteria'] = list;
+    try {
+      await ref.read(apiClientProvider).put('/api/v1/projects/${project.id}/academic', payload);
+      _rubTitleCtrl.clear();
+      await _load();
+    } on ApiClientException catch (e) {
+      setState(() => _error = e.message);
+    }
   }
 
   Future<void> _load() async {
@@ -90,6 +125,28 @@ class _AcademicStudioScreenState extends ConsumerState<AcademicStudioScreen> {
             ),
           ),
         ],
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(RmapTokens.space4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Add Rubric Criterion (live mark-sum audit)', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: _rubTitleCtrl, decoration: const InputDecoration(hintText: 'Criterion title'))),
+                    const SizedBox(width: 8),
+                    SizedBox(width: 90, child: TextField(controller: _rubMarksCtrl, decoration: const InputDecoration(hintText: 'Marks'))),
+                    const SizedBox(width: 8),
+                    OutlinedButton(onPressed: _addRubricCriterion, child: const Text('Add')),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 12),
         Card(
           child: Padding(

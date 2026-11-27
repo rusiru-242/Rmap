@@ -1,5 +1,6 @@
 package com.rmap.platform.spec;
 
+import com.rmap.platform.billing.RequiresActiveEntitlement;
 import com.rmap.platform.common.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +35,7 @@ public class TechnologyCatalogController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @RequiresActiveEntitlement
     public ApiResponse<TechnologyCatalogItem> addCustom(@RequestBody TechnologyCatalogItem item) {
         return ApiResponse.ok(service.addCustom(item));
     }

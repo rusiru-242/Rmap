@@ -1,5 +1,6 @@
 package com.rmap.platform.common;
 
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
@@ -34,6 +35,18 @@ public class GlobalExceptionHandler {
         }
         pd.setProperty("code", "VALIDATION_ERROR");
         pd.setProperty("errors", errors);
+        pd.setProperty("timestamp", Instant.now().toString());
+        return pd;
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ProblemDetail handleOptimisticLock(OptimisticLockingFailureException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                "The resource was modified concurrently. Refresh and retry your change."
+        );
+        pd.setTitle("OPTIMISTIC_LOCK_CONFLICT");
+        pd.setProperty("code", "OPTIMISTIC_LOCK_CONFLICT");
         pd.setProperty("timestamp", Instant.now().toString());
         return pd;
     }

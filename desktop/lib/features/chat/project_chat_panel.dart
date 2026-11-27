@@ -13,6 +13,8 @@ class ProjectChatPanel extends ConsumerStatefulWidget {
 
 class _ProjectChatPanelState extends ConsumerState<ProjectChatPanel> {
   final _msgCtrl = TextEditingController();
+  String? _loadedProjectId;
+  List<Map<String, dynamic>> _conversations = [];
   String? _conversationId;
   List<dynamic> _messages = [];
   bool _sending = false;
@@ -22,6 +24,63 @@ class _ProjectChatPanelState extends ConsumerState<ProjectChatPanel> {
   void dispose() {
     _msgCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadForProject(String projectId) async {
+    setState(() {
+      _loadedProjectId = projectId;
+      _conversations = [];
+      _conversationId = null;
+      _messages = [];
+      _error = null;
+    });
+    try {
+      final res = await ref.read(apiClientProvider).get('/api/v1/projects/$projectId/chat/conversations');
+      if (!mounted || _loadedProjectId != projectId) return;
+      final list = (res['data'] as List<dynamic>? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      setState(() {
+        _conversations = list;
+        if (list.isNotEmpty) {
+          _conversationId = list.first['id']?.toString();
+          _messages = (list.first['messages'] as List<dynamic>? ?? []);
+        }
+      });
+    } on ApiClientException catch (e) {
+      if (mounted && _loadedProjectId == projectId) {
+        setState(() => _error = e.message);
+      }
+    }
+  }
+
+  Future<void> _newSession(String projectId, String projectName) async {
+    try {
+      final res = await ref.read(apiClientProvider).post(
+        '/api/v1/projects/$projectId/chat/conversations',
+        {'title': '$projectName Session ${_conversations.length + 1}'},
+      );
+      final created = Map<String, dynamic>.from(res['data'] as Map);
+      setState(() {
+        _conversations = [created, ..._conversations];
+        _conversationId = created['id']?.toString();
+        _messages = [];
+        _error = null;
+      });
+    } on ApiClientException catch (e) {
+      setState(() => _error = e.message);
+    }
+  }
+
+  Future<void> _deleteCurrentSession(String projectId) async {
+    final cid = _conversationId;
+    if (cid == null) return;
+    try {
+      await ref.read(apiClientProvider).delete('/api/v1/projects/$projectId/chat/conversations/$cid');
+      await _loadForProject(projectId);
+    } on ApiClientException catch (e) {
+      setState(() => _error = e.message);
+    }
   }
 
   Future<void> _send() async {
@@ -37,15 +96,18 @@ class _ProjectChatPanelState extends ConsumerState<ProjectChatPanel> {
       final api = ref.read(apiClientProvider);
       if (_conversationId == null) {
         final created = await api.post('/api/v1/projects/${project.id}/chat/conversations', {'title': project.name});
-        _conversationId = (created['data'] as Map<String, dynamic>)['id']?.toString();
+        final conv = Map<String, dynamic>.from(created['data'] as Map);
+        _conversationId = conv['id']?.toString();
+        _conversations = [conv, ..._conversations];
       }
       final res = await api.post(
         '/api/v1/projects/${project.id}/chat/conversations/$_conversationId/messages',
         {'message': text},
       );
       _msgCtrl.clear();
+      final updated = Map<String, dynamic>.from(res['data'] as Map);
       setState(() {
-        _messages = ((res['data'] as Map<String, dynamic>)['messages'] as List<dynamic>? ?? []);
+        _messages = (updated['messages'] as List<dynamic>? ?? []);
         _sending = false;
       });
     } on ApiClientException catch (e) {
@@ -63,7 +125,7 @@ class _ProjectChatPanelState extends ConsumerState<ProjectChatPanel> {
       await ref.read(apiClientProvider).post(
             '/api/v1/projects/${project.id}/chat/conversations/$_conversationId/proposals/$proposalId/approve',
           );
-      setState(() => _error = null);
+      await _loadForProject(project.id);
     } on ApiClientException catch (e) {
       setState(() => _error = e.message);
     }
@@ -73,6 +135,16 @@ class _ProjectChatPanelState extends ConsumerState<ProjectChatPanel> {
   Widget build(BuildContext context) {
     final project = ref.watch(projectsControllerProvider).activeProject;
     final theme = Theme.of(context);
+
+    // Strictly isolate chat state per active project to prevent cross-project UI bleed.
+    if (project != null && project.id != _loadedProjectId) {
+      Future.microtask(() => _loadForProject(project.id));
+    } else if (project == null && _loadedProjectId != null) {
+      _loadedProjectId = null;
+      _conversations = [];
+      _conversationId = null;
+      _messages = [];
+    }
 
     return Container(
       color: theme.colorScheme.surface,
@@ -91,8 +163,48 @@ class _ProjectChatPanelState extends ConsumerState<ProjectChatPanel> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (project != null) ...[
+                IconButton(
+                  tooltip: 'New Chat Session',
+                  icon: const Icon(Icons.add_comment_outlined, size: 15),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _newSession(project.id, project.name),
+                ),
+                if (_conversationId != null)
+                  IconButton(
+                    tooltip: 'Delete Session',
+                    icon: const Icon(Icons.delete_outline, size: 15),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _deleteCurrentSession(project.id),
+                  ),
+              ],
             ],
           ),
+          if (project != null && _conversations.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                isDense: true,
+                value: _conversationId,
+                style: theme.textTheme.bodySmall,
+                items: _conversations
+                    .map((c) => DropdownMenuItem<String>(
+                          value: c['id']?.toString(),
+                          child: Text(c['title']?.toString() ?? 'Session', overflow: TextOverflow.ellipsis),
+                        ))
+                    .toList(),
+                onChanged: (cid) {
+                  if (cid == null) return;
+                  final found = _conversations.where((c) => c['id']?.toString() == cid).firstOrNull;
+                  setState(() {
+                    _conversationId = cid;
+                    _messages = (found?['messages'] as List<dynamic>? ?? []);
+                  });
+                },
+              ),
+            ),
+          ],
           const Divider(height: RmapTokens.space4),
           if (_error != null)
             Padding(
