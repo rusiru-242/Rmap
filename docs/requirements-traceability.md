@@ -20,8 +20,13 @@
 | **ADMN-01** | Admin Portal | Separate React/TS private admin app with backend-enforced `ADMIN` role | 1 | `admin/`, `backend/admin` | Completed |
 | **ADMN-02** | Admin Portal | User, trial, subscription, payment history, email log, audit log, and health views | 1 | `admin/`, `backend/admin` | Completed |
 | **CI-01** | CI/CD | GitHub Actions CI verifying backend, desktop, and admin builds & tests | 1 | `.github/workflows/` | Completed |
-| **AI-01..04** | AI Agents | Google Gemini `LlmProvider` and 4 internal agents + persistent orchestrator | 2 | `backend/ai` | Scheduled |
-| **SPEC-01** | ProjectSpec | Versioned Universal Project Specification with traceability | 2 | `backend/project` | Scheduled |
-| **ACAD-01..16** | Academic | Dynamic academic brief/rubric intelligence, constraints, logs, viva, deliverable packs | 2–3 | `backend/academic`, `desktop/` | Scheduled |
+| **AI-01..04** | AI Agents | Google Gemini `LlmProvider` and 4 internal agents + persistent orchestrator | 2 | `backend/ai`, `desktop/agents` | Completed (live Gemini blocked pending `GEMINI_API_KEY`) |
+| **SPEC-01** | ProjectSpec | Versioned Universal Project Specification with traceability, diff, and optimistic locking | 2 | `backend/spec`, `desktop/discovery` | Completed |
+| **PROJ-01** | Projects | Universal project CRUD, modes, combined/custom archetypes, membership & RBAC | 2 | `backend/project`, `desktop/projects` | Completed |
+| **DOC-01** | Documents | Safe PDF/DOCX/XLSX/CSV/TXT/MD/Image/ZIP parsing, traversal/bomb guards, secret redaction | 2 | `backend/document`, `desktop/discovery` | Completed |
+| **TECH-01** | Tech Catalog | Data-driven 45-item catalog + deterministic mandatory/forbidden constraint validator | 2 | `backend/spec`, `desktop/design` | Completed |
+| **ACAD-01..16** | Academic | Academic Assessment Model, rubric mapping, inconsistency detector, integrity warnings (Phase 2); delivery/viva (Phase 3) | 2–3 | `backend/spec`, `desktop/academic` | Phase 2 Complete |
+| **ML-01** | Dataset/ML | Deterministic CSV profiling, SHA-256 fingerprint, leakage warnings, ML experiment plans | 2 | `backend/spec`, `desktop/academic` | Completed |
+| **CHAT-01** | AI Assistant | Project-aware persistent chat, strict project context isolation, spec change proposals | 2 | `backend/chat`, `desktop/chat` | Completed (live Gemini blocked pending `GEMINI_API_KEY`) |
 | **EXEC-01..10** | Execution | Dynamic Phase Planner, Master Prompts, External Agents, Verification, Deployment | 3 | `backend/`, `desktop/` | Scheduled |
 | **REL-01..04** | Release | Public Download Website, Windows installer, signing, auto-update | 4 | `website/`, `scripts/` | Scheduled |

@@ -64,7 +64,9 @@ class AuthServiceTest {
                 ),
                 new RmapProperties.MailProperties("no-reply@rmap.local"),
                 new RmapProperties.BillingProperties(72, "unconfigured", ""),
-                new RmapProperties.BootstrapProperties("", "")
+                new RmapProperties.BootstrapProperties("", ""),
+                new RmapProperties.AiProperties("", "gemini-2.5-flash", "https://generativelanguage.googleapis.com/v1beta", 45, 2, 250000),
+                new RmapProperties.UploadProperties(15728640, 500, 52428800)
         );
         jwtService = new JwtService(props, fixedClock);
         authService = new AuthService(

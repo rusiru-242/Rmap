@@ -30,6 +30,8 @@ This document records the verified local development environment and selected st
 - **Spring Boot Actuator**: Managed by Spring Boot 3.4.5
 - **JJWT (`io.jsonwebtoken`)**: `0.12.6` (HMAC-SHA256 JWT access tokens)
 - **SpringDoc OpenAPI**: `2.8.6` (API documentation)
+- **Apache PDFBox**: `3.0.4` (Phase 2 page-level PDF extraction)
+- **Apache POI (`poi-ooxml`)**: `5.4.0` (Phase 2 DOCX & XLSX extraction)
 
 ### Infrastructure (`infra/docker-compose.yml`)
 - **MongoDB**: `mongo:7.0` (Single-node replica set `rs0` for local transactions)

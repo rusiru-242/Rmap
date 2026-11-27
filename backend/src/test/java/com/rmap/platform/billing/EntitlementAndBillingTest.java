@@ -124,7 +124,9 @@ class EntitlementAndBillingTest {
                 new RmapProperties.SecurityProperties("test-secret-key-with-more-than-thirty-two-bytes-length", 900, 604800, 600, List.of()),
                 new RmapProperties.MailProperties("no-reply@rmap.local"),
                 new RmapProperties.BillingProperties(72, "unconfigured", secret),
-                new RmapProperties.BootstrapProperties("", "")
+                new RmapProperties.BootstrapProperties("", ""),
+                new RmapProperties.AiProperties("", "gemini-2.5-flash", "https://generativelanguage.googleapis.com/v1beta", 45, 2, 250000),
+                new RmapProperties.UploadProperties(15728640, 500, 52428800)
         );
     }
 

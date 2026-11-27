@@ -6,6 +6,7 @@ import '../../core/navigation/nav_registry.dart';
 import '../../core/theme/rmap_theme.dart';
 import '../../core/theme/rmap_tokens.dart';
 import '../auth/auth_controller.dart';
+import '../chat/project_chat_panel.dart';
 import '../workspace/local_workspace_screen.dart';
 
 final activeProjectModeProvider = StateProvider<ProjectContextMode>((ref) => ProjectContextMode.general);
@@ -102,7 +103,7 @@ class RmapShell extends ConsumerWidget {
                       ),
                       SizedBox(
                         width: aiWidth,
-                        child: const _AiAssistantSidePanel(),
+                        child: const ProjectChatPanel(),
                       ),
                     ],
                   ],
@@ -300,61 +301,12 @@ class _NavTile extends StatelessWidget {
                     style: TextStyle(fontSize: 12.5, fontWeight: selected ? FontWeight.w600 : FontWeight.w400, color: fg),
                   ),
                 ),
-                if (item.phase > 1)
+                if (item.phase > 2)
                   Text('P${item.phase}', style: theme.textTheme.labelSmall?.copyWith(fontSize: 10)),
               ],
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _AiAssistantSidePanel extends StatelessWidget {
-  const _AiAssistantSidePanel();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      color: theme.colorScheme.surface,
-      padding: const EdgeInsets.all(RmapTokens.space4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.auto_awesome_outlined, size: 16, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Project-Aware AI Assistant',
-                  style: theme.textTheme.titleSmall,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: RmapTokens.space4),
-          Expanded(
-            child: Center(
-              child: Text(
-                'Google Gemini internal agents (Discovery, Architect, Engineering, Quality & Delivery) '
-                'connect through the backend LlmProvider in Phase 2.\n\n'
-                'No static fake AI responses are enabled in Phase 1.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall,
-              ),
-            ),
-          ),
-          const TextField(
-            enabled: false,
-            decoration: InputDecoration(
-              hintText: 'Available in Phase 2 (Gemini LlmProvider)',
-            ),
-          ),
-        ],
       ),
     );
   }

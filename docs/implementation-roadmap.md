@@ -2,7 +2,7 @@
 
 Rmap is delivered in **four sequential phases** with strict internal checkpoints and phase verification gates.
 
-## Phase 1: Core Platform and Infrastructure (Active)
+## Phase 1: Core Platform and Infrastructure (Completed & Verified)
 
 **Goal**: Establish the commercial monorepo, backend foundation, database/cache/SMTP infrastructure, Windows desktop workspace shell and design system, authentication with Email OTP, 72-hour trial and billing entitlement foundation, secure local workspace selection, private admin portal foundation, and CI verification.
 
@@ -17,7 +17,7 @@ Rmap is delivered in **four sequential phases** with strict internal checkpoints
 - **1H**: Private Admin Portal Foundation (React/TS/Vite, admin auth, health, users, trials/subscriptions, payments, audit & email logs)
 - **1I**: Integration Tests, Build Verification & CI (`docs/phase-reports/phase-1.md`)
 
-## Phase 2: Universal Project Intelligence
+## Phase 2: Universal Project Intelligence (Completed on `phase-2-universal-intelligence`)
 
 **Goal**: Implement project lifecycle management, untrusted document ingestion (PDF/DOCX/TXT/MD/spreadsheets), Google Gemini `LlmProvider`, the 4 specialized internal AI agents with persistent workflow orchestration, versioned `ProjectSpec`, technology catalog, requirements & constraint validation, system/DB/API architecture generation, Academic Intelligence (`ACAD-01`–`ACAD-16` discovery), Dataset Intelligence, and the Project-Aware AI Assistant.
 
