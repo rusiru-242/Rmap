@@ -10,6 +10,7 @@ import 'package:rmap_desktop/core/theme/rmap_theme.dart';
 import 'package:rmap_desktop/features/projects/projects_screens.dart';
 import 'package:rmap_desktop/features/settings/account_screens.dart';
 import 'package:rmap_desktop/features/shell/rmap_shell.dart';
+import 'package:rmap_desktop/features/workspace/local_execution_engine.dart';
 import 'package:rmap_desktop/features/workspace/local_workspace_screen.dart';
 import 'package:rmap_desktop/features/workspace/local_workspace_security.dart';
 
@@ -148,5 +149,28 @@ void main() {
     await tester.tap(find.text('CLIENT'));
     await tester.pumpAndSettle();
     expect(find.text('Budget'), findsOneWidget);
+  });
+
+  group('LocalExecutionEngine security', () {
+    test('blocks unallowlisted executables and shell metacharacters', () {
+      expect(
+        () => LocalExecutionEngine.validateCommand('powershell', ['-Command', 'dir']),
+        throwsA(isA<ExecutionSecurityException>()),
+      );
+      expect(
+        () => LocalExecutionEngine.validateCommand('git', ['status; rm -rf /']),
+        throwsA(isA<ExecutionSecurityException>()),
+      );
+      expect(
+        () => LocalExecutionEngine.validateCommand('git', ['status', '--short']),
+        returnsNormally,
+      );
+    });
+
+    test('redacts secret-like output values', () {
+      final clean = LocalExecutionEngine.redactOutput('API_KEY=sk-secret-value ok');
+      expect(clean, contains('API_KEY=[REDACTED]'));
+      expect(clean, isNot(contains('sk-secret-value')));
+    });
   });
 }

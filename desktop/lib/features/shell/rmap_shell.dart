@@ -301,7 +301,7 @@ class _NavTile extends StatelessWidget {
                     style: TextStyle(fontSize: 12.5, fontWeight: selected ? FontWeight.w600 : FontWeight.w400, color: fg),
                   ),
                 ),
-                if (item.phase > 2)
+                if (item.phase > 3)
                   Text('P${item.phase}', style: theme.textTheme.labelSmall?.copyWith(fontSize: 10)),
               ],
             ],
