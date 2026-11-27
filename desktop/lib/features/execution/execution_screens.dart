@@ -329,6 +329,24 @@ class _MasterPromptsScreenState extends ConsumerState<MasterPromptsScreen> {
               ),
             ),
           ),
+          for (final cf in (_active!['generatedContextFiles'] as List<dynamic>? ?? [])) ...[
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                dense: true,
+                title: Text('Context File: ${cf['fileName']}', style: theme.textTheme.titleSmall),
+                subtitle: Text(cf['content']?.toString() ?? '', maxLines: 3, overflow: TextOverflow.ellipsis),
+                trailing: IconButton(
+                  tooltip: 'Copy ${cf['fileName']}',
+                  icon: const Icon(Icons.copy, size: 15),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: cf['content']?.toString() ?? ''));
+                    setState(() => _info = 'Copied ${cf['fileName']} to clipboard.');
+                  },
+                ),
+              ),
+            ),
+          ],
         ],
         if (_history.length > 1) ...[
           const SizedBox(height: 12),
@@ -390,6 +408,18 @@ class _TasksAndKanbanScreenState extends ConsumerState<TasksAndKanbanScreen> {
     }
   }
 
+  Future<void> _updateStatus(String taskId, String status) async {
+    final project = ref.read(projectsControllerProvider).activeProject;
+    if (project == null) return;
+    setState(() => _error = null);
+    try {
+      await ref.read(apiClientProvider).patch('/api/v1/projects/${project.id}/execution/tasks/$taskId/status', {'status': status});
+      await _load();
+    } on ApiClientException catch (e) {
+      setState(() => _error = e.message);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final project = ref.watch(projectsControllerProvider).activeProject;
@@ -418,7 +448,16 @@ class _TasksAndKanbanScreenState extends ConsumerState<TasksAndKanbanScreen> {
               child: ListTile(
                 title: Text('${t['taskCode']} · ${t['title']}', style: theme.textTheme.titleSmall),
                 subtitle: Text('Phase: ${t['phaseId']} · Priority: ${t['priority']} · Owner: ${t['assignedMemberEmail'] ?? 'Unassigned'}'),
-                trailing: Text(t['status']?.toString() ?? 'PLANNED', style: theme.textTheme.labelSmall),
+                trailing: DropdownButton<String>(
+                  value: t['status']?.toString() ?? 'PLANNED',
+                  underline: const SizedBox.shrink(),
+                  items: const ['NOT_STARTED', 'PLANNED', 'IN_PROGRESS', 'IMPLEMENTED', 'VERIFIED', 'BLOCKED']
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 11.5))))
+                      .toList(),
+                  onChanged: (next) {
+                    if (next != null) _updateStatus(t['id'].toString(), next);
+                  },
+                ),
               ),
             ),
           ),
@@ -529,11 +568,24 @@ class TraceabilityAndVerificationScreen extends ConsumerStatefulWidget {
 class _TraceabilityAndVerificationScreenState extends ConsumerState<TraceabilityAndVerificationScreen> {
   Map<String, dynamic>? _matrix;
   String? _error;
+  String? _info;
+  final _reqIdCtrl = TextEditingController(text: 'REQ-001');
+  final _cmdCtrl = TextEditingController(text: 'mvnw test');
+  final _resultCtrl = TextEditingController();
+  String _strength = 'TEST_PASS';
 
   @override
   void initState() {
     super.initState();
     Future.microtask(_load);
+  }
+
+  @override
+  void dispose() {
+    _reqIdCtrl.dispose();
+    _cmdCtrl.dispose();
+    _resultCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -544,6 +596,29 @@ class _TraceabilityAndVerificationScreenState extends ConsumerState<Traceability
       if (mounted) setState(() => _matrix = res['data'] as Map<String, dynamic>?);
     } on ApiClientException catch (e) {
       if (mounted) setState(() => _error = e.message);
+    }
+  }
+
+  Future<void> _recordEvidence() async {
+    final project = ref.read(projectsControllerProvider).activeProject;
+    if (project == null || _reqIdCtrl.text.trim().isEmpty) return;
+    setState(() {
+      _error = null;
+      _info = null;
+    });
+    try {
+      final res = await ref.read(apiClientProvider).post('/api/v1/projects/${project.id}/execution/evidence', {
+        'requirementId': _reqIdCtrl.text.trim(),
+        'evidenceStrength': _strength,
+        'sourceOrCommand': _cmdCtrl.text.trim(),
+        'actualResult': _resultCtrl.text.trim(),
+      });
+      final ev = res['data'] as Map<String, dynamic>;
+      _resultCtrl.clear();
+      setState(() => _info = 'Recorded evidence for ${ev['requirementId']} -> ${ev['verificationStatus']}.');
+      await _load();
+    } on ApiClientException catch (e) {
+      setState(() => _error = e.message);
     }
   }
 
@@ -561,6 +636,7 @@ class _TraceabilityAndVerificationScreenState extends ConsumerState<Traceability
         Text('Strict separation of Planning Coverage, Implementation Coverage, and Verified Evidence Coverage.', style: theme.textTheme.bodySmall),
         const SizedBox(height: RmapTokens.space4),
         if (_error != null) Text(_error!, style: const TextStyle(color: RmapTokens.danger)),
+        if (_info != null) Text(_info!, style: const TextStyle(color: RmapTokens.success)),
         if (_matrix != null)
           Card(
             child: Padding(
@@ -577,6 +653,37 @@ class _TraceabilityAndVerificationScreenState extends ConsumerState<Traceability
               ),
             ),
           ),
+        const SizedBox(height: RmapTokens.space3),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(RmapTokens.space4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Record Verification Evidence', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    SizedBox(width: 110, child: TextField(controller: _reqIdCtrl, decoration: const InputDecoration(labelText: 'Req ID'))),
+                    DropdownButton<String>(
+                      value: _strength,
+                      items: const ['TEST_PASS', 'BUILD_PASS', 'API_VERIFIED', 'MANUAL_APPROVED', 'AGENT_CLAIM', 'FILE_EXISTS']
+                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .toList(),
+                      onChanged: (v) => setState(() => _strength = v ?? 'TEST_PASS'),
+                    ),
+                    SizedBox(width: 160, child: TextField(controller: _cmdCtrl, decoration: const InputDecoration(labelText: 'Command / Source'))),
+                    SizedBox(width: 220, child: TextField(controller: _resultCtrl, decoration: const InputDecoration(labelText: 'Observed Result'))),
+                    FilledButton(onPressed: _recordEvidence, child: const Text('Record')),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: RmapTokens.space4),
         for (final r in rows)
           Card(

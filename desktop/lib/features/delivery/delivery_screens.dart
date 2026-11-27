@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/rmap_tokens.dart';
 import '../projects/project_state.dart';
+import '../workspace/local_execution_engine.dart';
+import '../workspace/local_workspace_screen.dart';
 
 class UiUxDesignStudioScreen extends ConsumerStatefulWidget {
   const UiUxDesignStudioScreen({super.key});
@@ -311,11 +313,23 @@ class _TestingSecurityAndDeliveryScreenState extends ConsumerState<TestingSecuri
   Map<String, dynamic>? _guidance;
   Map<String, dynamic>? _academicPack;
   String? _error;
+  String? _consoleOutput;
+  String? _changeImpactInfo;
+  bool _runningCmd = false;
+  final _crReqCtrl = TextEditingController(text: 'REQ-001');
+  final _crSummaryCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     Future.microtask(_load);
+  }
+
+  @override
+  void dispose() {
+    _crReqCtrl.dispose();
+    _crSummaryCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -335,6 +349,41 @@ class _TestingSecurityAndDeliveryScreenState extends ConsumerState<TestingSecuri
     }
   }
 
+  Future<void> _runAuthorizedCheck(String exe, List<String> args) async {
+    final scan = ref.read(activeWorkspaceScanProvider);
+    if (scan == null) {
+      setState(() => _consoleOutput = 'Select a local workspace folder first in Repository Explorer.');
+      return;
+    }
+    setState(() {
+      _runningCmd = true;
+      _consoleOutput = 'Running $exe ${args.join(' ')}...';
+    });
+    final res = await LocalExecutionEngine.runAllowlisted(executable: exe, arguments: args, workspaceRoot: scan.rootPath);
+    if (mounted) {
+      setState(() {
+        _runningCmd = false;
+        _consoleOutput = 'Exit ${res.exitCode}\n${res.stdout}\n${res.stderr}'.trim();
+      });
+    }
+  }
+
+  Future<void> _submitChangeRequest() async {
+    final project = ref.read(projectsControllerProvider).activeProject;
+    if (project == null || _crSummaryCtrl.text.trim().isEmpty) return;
+    try {
+      final res = await ref.read(apiClientProvider).post('/api/v1/projects/${project.id}/delivery/change-requests', {
+        'requirementId': _crReqCtrl.text.trim(),
+        'changeSummary': _crSummaryCtrl.text.trim(),
+      });
+      final data = res['data'] as Map<String, dynamic>;
+      _crSummaryCtrl.clear();
+      setState(() => _changeImpactInfo = 'Change logged for ${data['requirementId']} — ${data['staleEvidenceInvalidated']} verified evidence record(s) marked STALE.');
+    } on ApiClientException catch (e) {
+      setState(() => _error = e.message);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final project = ref.watch(projectsControllerProvider).activeProject;
@@ -347,6 +396,63 @@ class _TestingSecurityAndDeliveryScreenState extends ConsumerState<TestingSecuri
         Text(widget.modeTitle, style: theme.textTheme.headlineSmall),
         const SizedBox(height: RmapTokens.space4),
         if (_error != null) Text(_error!, style: const TextStyle(color: RmapTokens.danger)),
+        if (_changeImpactInfo != null) Text(_changeImpactInfo!, style: const TextStyle(color: RmapTokens.success)),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(RmapTokens.space4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Authorized Local Execution Console (Allowlisted Commands Only)', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    OutlinedButton(onPressed: _runningCmd ? null : () => _runAuthorizedCheck('git', ['status', '--short']), child: const Text('git status')),
+                    OutlinedButton(onPressed: _runningCmd ? null : () => _runAuthorizedCheck('flutter', ['analyze']), child: const Text('flutter analyze')),
+                    OutlinedButton(onPressed: _runningCmd ? null : () => _runAuthorizedCheck('npm', ['test']), child: const Text('npm test')),
+                  ],
+                ),
+                if (_consoleOutput != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.scaffoldBackgroundColor,
+                      borderRadius: BorderRadius.circular(RmapTokens.radiusSm),
+                      border: Border.all(color: theme.dividerColor),
+                    ),
+                    child: SelectableText(_consoleOutput!, style: const TextStyle(fontFamily: 'Consolas', fontSize: 11.5)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(RmapTokens.space4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Client Change Request & Stale Evidence Invalidation', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    SizedBox(width: 110, child: TextField(controller: _crReqCtrl, decoration: const InputDecoration(labelText: 'Req ID'))),
+                    const SizedBox(width: 8),
+                    Expanded(child: TextField(controller: _crSummaryCtrl, decoration: const InputDecoration(labelText: 'Change summary'))),
+                    const SizedBox(width: 8),
+                    FilledButton(onPressed: _submitChangeRequest, child: const Text('Submit')),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         if (_guidance != null)
           Card(
             child: Padding(

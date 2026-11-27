@@ -175,9 +175,12 @@ class DatasetWorkspaceScreen extends ConsumerStatefulWidget {
 
 class _DatasetWorkspaceScreenState extends ConsumerState<DatasetWorkspaceScreen> {
   List<dynamic> _profiles = [];
+  List<dynamic> _experiments = [];
   bool _loading = false;
   String? _error;
   final _targetCtrl = TextEditingController();
+  final _expNameCtrl = TextEditingController();
+  final _modelFamilyCtrl = TextEditingController(text: 'LogisticRegression');
   String _taskType = 'CLASSIFICATION';
 
   @override
@@ -189,6 +192,8 @@ class _DatasetWorkspaceScreenState extends ConsumerState<DatasetWorkspaceScreen>
   @override
   void dispose() {
     _targetCtrl.dispose();
+    _expNameCtrl.dispose();
+    _modelFamilyCtrl.dispose();
     super.dispose();
   }
 
@@ -197,7 +202,30 @@ class _DatasetWorkspaceScreenState extends ConsumerState<DatasetWorkspaceScreen>
     if (project == null) return;
     try {
       final res = await ref.read(apiClientProvider).get('/api/v1/projects/${project.id}/datasets');
-      setState(() => _profiles = res['data'] as List<dynamic>? ?? []);
+      final expRes = await ref.read(apiClientProvider).get('/api/v1/projects/${project.id}/delivery/ml/experiments');
+      if (mounted) {
+        setState(() {
+          _profiles = res['data'] as List<dynamic>? ?? [];
+          _experiments = expRes['data'] as List<dynamic>? ?? [];
+        });
+      }
+    } on ApiClientException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    }
+  }
+
+  Future<void> _createExperiment() async {
+    final project = ref.read(projectsControllerProvider).activeProject;
+    if (project == null || _expNameCtrl.text.trim().isEmpty) return;
+    try {
+      await ref.read(apiClientProvider).post('/api/v1/projects/${project.id}/delivery/ml/experiments', {
+        'name': _expNameCtrl.text.trim(),
+        'taskType': _taskType,
+        'modelFamily': _modelFamilyCtrl.text.trim(),
+        'datasetFingerprint': _profiles.isNotEmpty ? _profiles.first['sha256Fingerprint'] : 'unlinked',
+      });
+      _expNameCtrl.clear();
+      await _load();
     } on ApiClientException catch (e) {
       setState(() => _error = e.message);
     }
@@ -296,6 +324,26 @@ class _DatasetWorkspaceScreenState extends ConsumerState<DatasetWorkspaceScreen>
                   ],
                 ),
               ),
+            ),
+          ),
+        const Divider(height: 24),
+        Text('ML Experiment Studio (${_experiments.length} tracked — real imported metrics only)', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(child: TextField(controller: _expNameCtrl, decoration: const InputDecoration(hintText: 'Experiment name (e.g., Baseline LogReg)'))),
+            const SizedBox(width: 8),
+            SizedBox(width: 180, child: TextField(controller: _modelFamilyCtrl, decoration: const InputDecoration(hintText: 'Model family'))),
+            const SizedBox(width: 8),
+            OutlinedButton(onPressed: _createExperiment, child: const Text('Track Experiment')),
+          ],
+        ),
+        const SizedBox(height: 8),
+        for (final exp in _experiments)
+          Card(
+            child: ListTile(
+              title: Text('${exp['name']} · ${exp['modelFamily']} (${exp['status']})', style: theme.textTheme.titleSmall),
+              subtitle: Text('Source: ${exp['resultSource'] ?? 'Pending real run import'} · Metrics: ${exp['importedMetrics']}'),
             ),
           ),
       ],

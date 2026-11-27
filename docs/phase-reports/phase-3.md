@@ -64,13 +64,37 @@ Implemented in `desktop/lib/features/workspace/local_execution_engine.dart` and 
 
 ## 9. Actual Commands Executed & Observed Results
 
+### Phase 3 Engineering Audit Fixes Applied
+
+1. **Desktop `TasksAndKanbanScreen`**: Wired live status transition dropdown (`PATCH /execution/tasks/{taskId}/status`) so the backend's evidence-gated `VERIFIED` rule is exercised directly from the UI.
+2. **Desktop `TraceabilityAndVerificationScreen`**: Added interactive **Record Verification Evidence** form (`POST /execution/evidence`) supporting all evidence strengths (`TEST_PASS`, `BUILD_PASS`, `API_VERIFIED`, `MANUAL_APPROVED`, `AGENT_CLAIM`, `FILE_EXISTS`).
+3. **Desktop `MasterPromptsScreen`**: Rendered generated context files (`AGENTS.md`, `CLAUDE.md`, `PHASE_REPORT_TEMPLATE.md`) with one-click clipboard copy.
+4. **Desktop `TestingSecurityAndDeliveryScreen`**: Added interactive **Authorized Local Execution Console** (`LocalExecutionEngine.runAllowlisted`) and **Client Change Request** form (`POST /delivery/change-requests` with live stale-evidence invalidation count).
+5. **Desktop `DatasetWorkspaceScreen`**: Connected Phase 3 **ML Experiment Studio** (`/delivery/ml/experiments`) alongside Phase 2 deterministic CSV profiling.
+
+### Live 14-Step End-to-End Verification (`PORT=8089`, `127.0.0.1:27017/rmap_phase3_e2e_audit`)
+
+```text
+STEP 01 Project Created: 6b091560e4f89e222d182dd0
+STEP 02 Spec Approved: v1 (APPROVED)
+STEP 03 Dynamic Phase Plan: STANDARD (6 phases)
+STEP 04 Master Prompt: v1 contextFiles=3
+STEP 05-06 Local Repo Synced: Rmap-Repo stacks=Java / JVM,Flutter / Dart,Node.js / TypeScript
+STEP 09-10 Error Diagnosed & Repaired: TEST_FAILURE -> VERIFIED_FIXED
+STEP 07-08-11 Verification Evidence: VERIFIED verifiedCoverage=100%
+STEP 12 Documentation & DOCX Export: 14-Step Audit Project SRS docxBytes=2656
+STEP 13 Deployment Guide: Vercel steps=20
+STEP 14 Academic & ML: vivaQs=4 aiLogs=1 mlStatus=RESULTS_IMPORTED
+```
+
+### Automated Build & Test Matrix
+
 | Component | Command | Observed Result |
 | :--- | :--- | :--- |
 | Backend Verify & Package | `cd backend && .\mvnw.cmd verify` | **PASS** — 121 Java classes compiled (`--release 21`), **`24/24` tests passed** (Phase 1: 12, Phase 2: 7, Phase 3: 5 including real PDF `%PDF-` and DOCX `PK` export assertions); packaged JAR |
-| Live Phase 3 + MongoDB Smoke Test | Packaged JAR (`PORT=8088`, `127.0.0.1:27017/rmap_phase3_verify`) | **PASS** — Caught and fixed MongoDB dotted-key `Map` persistence bug (`MasterPromptVersion.generatedContextFiles` -> `List<ContextFileEntry>`); verified Quick Phase Plan (`3` phases), 19-section Master Prompt (`v1`, `3` context files, `1879` chars), Evidence & Change Impact (`recorded=VERIFIED`, `staleInvalidated=1`), Error Studio (`PORT_CONFLICT`, `maxAttempts=3`), real PDF export (`1101` bytes), and 20-step Render Deployment Guide |
 | Desktop Analyze & Tests | `cd desktop && flutter analyze && flutter test` | **PASS** — `0` analyzer issues, **`10/10` tests passed** (including `LocalExecutionEngine` allowlist, shell-injection blocking, and secret redaction tests) |
-| Desktop Windows Release Build | `cd desktop && flutter build windows --release` | **PASS** — `√ Built build\windows\x64\runner\Release\rmap_desktop.exe` (35.5s) |
-| Admin Regression | `cd admin && npm run lint && npm run typecheck && npm run test && npm run build` | **PASS** — `0` ESLint/TS errors, `3/3` Vitest tests passed, Vite production build succeeded (972ms) |
+| Desktop Windows Release Build | `cd desktop && flutter build windows --release` | **PASS** — `√ Built build\windows\x64\runner\Release\rmap_desktop.exe` (35.0s) |
+| Admin Regression | `cd admin && npm run lint && npm run typecheck && npm run test && npm run build` | **PASS** — `0` ESLint/TS errors, `3/3` Vitest tests passed, Vite production build succeeded (983ms) |
 
 ## 10. Known Issues, Missing Credentials & Blocked Functionality
 
