@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: rmap-backend
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 20MB
   data:
     mongodb:
       uri: ${RMAP_MONGODB_URI:mongodb://localhost:27017/rmap?replicaSet=rs0}
@@ -59,3 +63,14 @@ rmap:
   bootstrap:
     admin-email: ${RMAP_BOOTSTRAP_ADMIN_EMAIL:}
     admin-password: ${RMAP_BOOTSTRAP_ADMIN_PASSWORD:}
+  ai:
+    gemini-api-key: ${GEMINI_API_KEY:${RMAP_GEMINI_API_KEY:}}
+    gemini-model: ${GEMINI_MODEL:gemini-2.5-flash}
+    gemini-base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+    timeout-seconds: ${RMAP_AI_TIMEOUT_SECONDS:45}
+    max-retries: ${RMAP_AI_MAX_RETRIES:2}
+    daily-token-quota: ${RMAP_AI_DAILY_TOKEN_QUOTA:250000}
+  uploads:
+    max-file-bytes: 15728640
+    max-zip-entries: 500
+    max-zip-uncompressed-bytes: 52428800

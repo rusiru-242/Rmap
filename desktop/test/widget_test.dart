@@ -7,8 +7,10 @@ import 'package:path/path.dart' as p;
 import 'package:rmap_desktop/app.dart';
 import 'package:rmap_desktop/core/navigation/nav_registry.dart';
 import 'package:rmap_desktop/core/theme/rmap_theme.dart';
+import 'package:rmap_desktop/features/projects/projects_screens.dart';
 import 'package:rmap_desktop/features/settings/account_screens.dart';
 import 'package:rmap_desktop/features/shell/rmap_shell.dart';
+import 'package:rmap_desktop/features/workspace/local_execution_engine.dart';
 import 'package:rmap_desktop/features/workspace/local_workspace_screen.dart';
 import 'package:rmap_desktop/features/workspace/local_workspace_security.dart';
 
@@ -124,5 +126,51 @@ void main() {
     await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
     expect(container.read(themeModeProvider), ThemeMode.dark);
+  });
+
+  testWidgets('CreateProjectWizardScreen adapts dynamic fields by project mode', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: RmapTheme.light(),
+          home: const Scaffold(body: CreateProjectWizardScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create Project Wizard'), findsOneWidget);
+    expect(find.text('Budget'), findsNothing);
+
+    await tester.tap(find.text('CLIENT'));
+    await tester.pumpAndSettle();
+    expect(find.text('Budget'), findsOneWidget);
+  });
+
+  group('LocalExecutionEngine security', () {
+    test('blocks unallowlisted executables and shell metacharacters', () {
+      expect(
+        () => LocalExecutionEngine.validateCommand('powershell', ['-Command', 'dir']),
+        throwsA(isA<ExecutionSecurityException>()),
+      );
+      expect(
+        () => LocalExecutionEngine.validateCommand('git', ['status; rm -rf /']),
+        throwsA(isA<ExecutionSecurityException>()),
+      );
+      expect(
+        () => LocalExecutionEngine.validateCommand('git', ['status', '--short']),
+        returnsNormally,
+      );
+    });
+
+    test('redacts secret-like output values', () {
+      final clean = LocalExecutionEngine.redactOutput('API_KEY=sk-secret-value ok');
+      expect(clean, contains('API_KEY=[REDACTED]'));
+      expect(clean, isNot(contains('sk-secret-value')));
+    });
   });
 }

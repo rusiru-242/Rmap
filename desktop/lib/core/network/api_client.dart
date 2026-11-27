@@ -27,7 +27,7 @@ class RmapApiClient {
           BaseOptions(
             baseUrl: baseUrl,
             connectTimeout: const Duration(seconds: 8),
-            receiveTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 45),
             headers: const {'Content-Type': 'application/json'},
           ),
         ) {
@@ -47,16 +47,16 @@ class RmapApiClient {
     _accessToken = token;
   }
 
-  Future<Map<String, dynamic>> get(String path) async {
+  Future<Map<String, dynamic>> get(String path, {Map<String, dynamic>? query}) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(path);
+      final response = await _dio.get<Map<String, dynamic>>(path, queryParameters: query);
       return response.data ?? const {};
     } on DioException catch (e) {
       throw _mapError(e);
     }
   }
 
-  Future<Map<String, dynamic>> post(String path, [Map<String, dynamic>? data]) async {
+  Future<Map<String, dynamic>> post(String path, [Object? data]) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(path, data: data);
       return response.data ?? const {};
@@ -65,9 +65,49 @@ class RmapApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> patch(String path, [Map<String, dynamic>? data]) async {
+  Future<Map<String, dynamic>> put(String path, [Object? data]) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(path, data: data);
+      return response.data ?? const {};
+    } on DioException catch (e) {
+      throw _mapError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> patch(String path, [Object? data]) async {
     try {
       final response = await _dio.patch<Map<String, dynamic>>(path, data: data);
+      return response.data ?? const {};
+    } on DioException catch (e) {
+      throw _mapError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> delete(String path, {Map<String, dynamic>? query}) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(path, queryParameters: query);
+      return response.data ?? const {};
+    } on DioException catch (e) {
+      throw _mapError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required String filePath,
+    required String fileName,
+    Map<String, dynamic>? fields,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        ...?fields,
+        'file': await MultipartFile.fromFile(filePath, filename: fileName),
+      });
+      final response = await _dio.post<Map<String, dynamic>>(
+        path,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
       return response.data ?? const {};
     } on DioException catch (e) {
       throw _mapError(e);

@@ -1,0 +1,7 @@
+customer_id,tenure_months,monthly_spend,plan_tier,future_churn_leak,churned
+C001,12,49.50,pro,0,0
+C002,3,19.00,starter,1,1
+C002,3,19.00,starter,1,1
+C003,24,,enterprise,0,0
+C004,1,19.00,,1,1
+C005,18,79.00,pro,0,0

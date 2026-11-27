@@ -9,7 +9,9 @@ public record RmapProperties(
         SecurityProperties security,
         MailProperties mail,
         BillingProperties billing,
-        BootstrapProperties bootstrap
+        BootstrapProperties bootstrap,
+        AiProperties ai,
+        UploadProperties uploads
 ) {
     public record SecurityProperties(
             String jwtSecret,
@@ -32,5 +34,20 @@ public record RmapProperties(
     public record BootstrapProperties(
             String adminEmail,
             String adminPassword
+    ) {}
+
+    public record AiProperties(
+            String geminiApiKey,
+            String geminiModel,
+            String geminiBaseUrl,
+            int timeoutSeconds,
+            int maxRetries,
+            long dailyTokenQuota
+    ) {}
+
+    public record UploadProperties(
+            long maxFileBytes,
+            int maxZipEntries,
+            long maxZipUncompressedBytes
     ) {}
 }
